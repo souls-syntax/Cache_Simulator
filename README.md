@@ -28,6 +28,7 @@ A cache simulator is a valuable tool for computer architecture for several reaso
 
 
 TODO: complete the theory part.
+Project check by Anmol Shukla. hellop
 ---
 
 # Version 1: L1 Direct-Mapped cache Simulator in C
