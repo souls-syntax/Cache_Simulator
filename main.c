@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
     while((fgets(line_buffer, sizeof(line_buffer), file_pointer))) {
       if (line_buffer[0] != ' ') continue;
       if (sscanf(line_buffer, " %c %llx,%d", &op, &addr, &size) < 3) continue;
-      if (verbose) printf("%c %llx %d", op, addr, size);
+      if (verbose) printf(" %c %llx %d", op, addr, size);
 
       switch (op) {
         case 'L':
@@ -135,6 +135,7 @@ int main(int argc, char** argv) {
           accessCache(addr, s_bits, b_bits, E_lines);
           break;
         case 'I':
+          printf("\n");
           continue;
         default:
           continue;
