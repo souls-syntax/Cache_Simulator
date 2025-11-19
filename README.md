@@ -1,4 +1,24 @@
+\newpage
+
 # Design and Implementation of a Configurable Cache Simulator for Memory Hierarchy Analysis
+
+Team members
+
+--------------------------
+
+--------------------------
+
+--------------------------
+
+--------------------------
+
+Under:
+
+CS Dept., GLA University
+
+Date: 
+
+\newpage
 
 ## 1. Abstract
 
@@ -17,8 +37,9 @@ A cache is a small, fast storage device that acts as a staging area for the data
 
 ### Terminology 
 
-**Cache Hit*** : When the required data is found in the cache.
-**Cache Miss*** : When the required data is not found in the cache so it is requested from lower hierarchy memory.
+**Cache Hit** : When the required data is found in the cache.
+
+**Cache Miss** : When the required data is not found in the cache so it is requested from lower hierarchy memory.
 
 ***Cache miss are of 3 types:***
 
@@ -28,6 +49,7 @@ A cache is a small, fast storage device that acts as a staging area for the data
 
 *Capacity Miss* : Occurs when the active working set exceeds the total size of the cache.
 
+\newpage
 ## 3. System Architecture and Implementations
 
 The simulator utilizes a modular, trace-driven architecture designed to process Valgrind memory access logs. It manages a configurable N-way Set Associative cache using a Least Recently Used (LRU) eviction policy.
@@ -52,7 +74,7 @@ The simulator dynamically allocates memory based on the user-supplied parameters
 
 For a given memory address, the simulator decomposes the 64-bit virtual address into three components:
 
-1. Tag: The unique identifies for the memory block.
+1. Tag: The unique identifier for the memory block.
 2. Set Index: Determines which set the data belongs to.
 3. Block offset: Ignored for the simulation logic.
 
@@ -62,7 +84,7 @@ The mapping from Set Index to physical memory location in the array is calculate
 
 ### 3.3 The Access Algorithm (Set-Associative Logic)
 
-The core engine(`accessCache`) processes  memory requests using a three-stage algorithic procedure to handle associativity and the LRU policy.
+The core engine(`accessCache`) processes  memory requests using a three-stage algorithmic procedure to handle associativity and the LRU policy.
 
 #### Phase 1 Hit detection.
 The system isolates the E line corresponding to the calculated set index. it iterates through it and check for a match.
@@ -99,6 +121,7 @@ for each line:
 ```
 Now that line with minimum LRU have been identified, the victim line is overwritten with the new tag, and it's lru_counter is written with global_lru_timestamp.
 
+\newpage
 ## 4 Results
 
 ### 4.1 Tests
@@ -112,24 +135,45 @@ Now that line with minimum LRU have been identified, the victim line is overwrit
 | traces/long.trace   | 1 | 1 | 5 | 229613 | 57351   | 57349     | 0.800146 | 0.199854  |
 | traces/long.trace   | 1 | 1 | 6 | 229623 | 57341   | 57339     | 0.800181 | 0.199819  |
 
-The results we got from our simulator.
+The finding of our simulation.
 
 ### Miss and eviction vs Associativity
 
-![Fig_1](./resources/miss_and_eviction_vs_associativity.png){ width=70% }
+![Fig_1](./resources/miss_and_eviction_vs_associativity.png)
 
-*Fig 1: Impact of Set associativity on Miss Rates.*
+*Fig 1: Impact of set associativity on Miss Rates.*
 
 
-The sharp decline in misses and eviction as associativity increases shows the LRU policy is migiating the conflict miss.
+The sharp decline in misses and eviction as associativity increases shows the LRU policy is mitigating the conflict miss.
 
 
 ### Hit Rate vs Block Size
 
-![Fig_2](./resources/hit_vs_associativity.png){ width=70% }
+![Fig_2](./resources/hit_vs_block.png)
 *Fig 2: Analysis of Spatial locality*
 
 Increasing block size yields higher hit rates, confirming that the simulator correctly models the pre-fetching benefits on larger cache lines.
+
+
+![Fig_3](./resources/Heatmap.png)
+*Fig 3: Correlation Matrix of cache Parameters.*
+
+The heatmap highlights a strong positive correlation(*p* == 0.47) between block size and hit rate, quantitatively validating the design parameters.
+
+### The best configuration
+
+Among all our test the configuration that produced best results:
+
+| trace               | s | E | b | hits   | misses  | evictions | hit_rate | miss_rate |
+|---------------------|---|---|---|--------|---------|-----------|----------|-----------|
+| traces/long.trace   | 8 | 8 | 6 | 284911 | 2053  | 5         | 0.992846 | 0.007154  |
+
+
+## Conclusion
+
+The trace-driven cache simulator effectively models set-associative caches with LRU eviction, capturing cold, conflict, and capacity misses with high fidelity. Results show that higher associativity drastically reduces conflict misses while larger block sizes exploit spatial locality to boost hit rates, confirming both theoretical expectations and practical behavior. By providing clear insights into cache performance and parameter trade-offs, this simulator serves as a robust platform for exploring memory hierarchies.
+
+
 
 
 
