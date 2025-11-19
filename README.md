@@ -1,87 +1,102 @@
 # Design and Implementation of a Configurable Cache Simulator for Memory Hierarchy Analysis
 
-## Abstract
+## 1. Abstract
 
-Modern CPUs rely heavily on cache performance; this project develops a simulator which is supposed to mimic the behavior of a hardware cache subsystem. This simulator is written in C language, due to it being an optimal choice between convenience and control.
+Modern CPUs rely heavily on cache performance to bridge the latency gap between the processor and main memory. This project implements a trace-driven simulator written in C to mimic the behavior of a hardware cache subsystem. The goal is to analyze the effects of varying cache parameters (associativity, block size, capacity) on hit/miss rates and to explore trade-offs in memory hierarchy design.
 
-The goal of this project is to simulate and analyze the effects of cache parameters on hit/miss performance and to explore the trade-offs in memory hierarchy design. 
+## 2. Introduction
 
-## Introduction
+### Motivation
 
-### What is Cache ?
+A significant performance bottleneck exists between high-speed CPU registers and slower DRAM. This is mitigated by complex SRAM cache hierarchies. Understanding cache behavior is paramount for both software optimization and hardware architecture. 
+This project addresses this need by providing a tool to visualize the impact of cache configuration on memory access efficiency
 
-A cache is a small, fast storage device that acts as a staging area for the data objects in a larger, slower device. Caches are orders of magnitude faster than DRAM and as such are very important for speeding the overall operation of CPU without making CPU wait.
+### What is Cache?
 
-### Purpose of simulator 
+A cache is a small, fast storage device that acts as a staging area for the data objects, stored in a larger, slower device. Caches are orders of magnitude faster than DRAM, and as such are very important for speeding the overall operation of CPU, without making CPU wait.
 
-A cache simulator is a valuable tool for computer architecture for several reasons:
-    1. Performance Analysis
-    2. Optimization of programs
-    3. Explore different type of design.
+### Terminology 
 
-### Some helpful definitions 
+**Cache Hit*** : When the required data is found in the cache.
+**Cache Miss*** : When the required data is not found in the cache so it is requested from lower hierarchy memory.
 
-**Cache Hits** :- When a program needs a particular data object `d` from level `k+1`, it first looks for d in one of the blocks currently stored at level `k`. If `d` happens to be cached at level `k`, then that act is called cache hit.
+***Cache miss are of 3 types:***
 
-**Cache Miss** :- If not found on level `k` then it is said as cache miss.
+*Cold Miss* : Occurs when the cache (or a specific set) is empty. The block has never been loaded.
 
+*Conflict Miss* : Occurs in set-associative or direct-mapped caches when the cache has sufficient capacity, but the specific set mapping to the address is full.
 
+*Capacity Miss* : Occurs when the active working set exceeds the total size of the cache.
 
-TODO: complete the theory part.
-Project check by Anmol Shukla. hellop
----
+## 3. System Architecture and Implementations
 
-# Version 1: L1 Direct-Mapped cache Simulator in C
+The simulator utilizes a modular, trace-driven architecture designed to process Valgrind memory access logs. It manages a configurable N-way Set Associative cache using a Least Recently Used (LRU) eviction policy.
 
-This is a simple L1 data cache simulator, written in C as an exercise to understand the core princiles of the cache memory hierarchies.
+### 3.1 Data Structure Design
 
-This simulator read Valgrind memory traces and reports the total number of hits, misses, and eviction.
+To model the metadata required for the cache line and replacement polices, a custom data structure was defined `cache_line_t`.
 
-
-It uses fgets and sscanf for parsing the trace file.
-```c
-void accessCache(unsigned long long address, int s_bits, int b_bits) {
-  // printf("Accessing address: 0x%llx\n", address);
-  // Finding the address_tag.
-  unsigned long long address_tag = address >> (s_bits + b_bits);
-  
-  // Finding the Index mask
-  unsigned long long set_index_mask = (1 << s_bits) - 1;
-  unsigned long long address_index = (address >> b_bits) & set_index_mask;
-
-  cache_line_t* line = &cache[address_index];
-  
-  // Hit miss logic.
-
-  if (line->valid_bit == 1 && line->tag == address_tag) {
-    hit_count++;
-  }
-  else {
-    miss_count++;
-
-    if(line->valid_bit == 1) {
-      eviction_count++;
-    }
-    line->valid_bit = 1;
-    line->tag = address_tag;
-  }
-}
-```
-Access cache is the core engine of the program.
-
-It uses bit operations to seperate the tag, frame, offset from the memory address.
-
-and then uses it to verify it's presence in our cache data structure for cache hit or miss.
-
-```c
+```C
 typedef struct {
-    int valid_bit;
-    unsigned long long tag;
+    int valid_bit;                    // Integrity flag. (1= Active data, 0 = Empty)
+    unsigned long long tag;           // Middle-order address bits for identification
+    unsigned long long lru_counter;   // Timestamp for LRU eviction policy
    
 } cache_line_t;
-
-// A cache -- an array of cache_line_t
-cache_line_t* cache;
 ```
+The system maintains a global global_lru_timestamp that increments on every memory operation, allowing the simulation to model temporal locality accurately.
+
+### 3.2 Memory Organization and Address Mapping
+
+The simulator dynamically allocates memory based on the user-supplied parameters S(Number of sets) and E(Associativity). Although conceptually a 2D structure(Sets X Ways), the memory is allocated as a contiguous 1D array to optimize the cache locality for the simulator itself.
+
+For a given memory address, the simulator decomposes the 64-bit virtual address into three components:
+
+1. Tag: The unique identifies for the memory block.
+2. Set Index: Determines which set the data belongs to.
+3. Block offset: Ignored for the simulation logic.
+
+The mapping from Set Index to physical memory location in the array is calculated via row-major indexing.
+
+`Index = (SetIndex * Associativity) + WayIndex`
+
+### 3.3 The Access Algorithm (Set-Associative Logic)
+
+The core engine(`accessCache`) processes  memory requests using a three-stage algorithic procedure to handle associativity and the LRU policy.
+
+#### Phase 1 Hit detection.
+The system isolates the E line corresponding to the calculated set index. it iterates through it and check for a match.
+
+```
+if line.valid_bit == 1 AND line.tag == address_tag:
+    hit++
+    lru_counter = global_lru_timestamp
+```
+
+#### Phase 2 Cold miss.
+
+```
+if line.valid_bit == 0:
+    miss++
+    line.valid_bit = 1
+    line.tag = address_tag
+    lru_counter = global_lru_timestamp
+
+```
+
+
+#### Phase 3 Conflict miss.
+
+If set is full(no hit, no empty slots), a conflict miss has occured. The system must select a victim for eviction based on LRU policy.
+
+```
+min_lru = line[0].lru_counter
+
+for each line:
+   if line.lru_counter < min_lru:
+       update min_lru and victim_index
+
+```
+Now that line with minimum LRU have been identified, the victim line is overwritten with the new tag, and it's lru_counter is written with global_lru_timestamp.
 
 
