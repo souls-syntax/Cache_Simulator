@@ -37,9 +37,9 @@ void printUsage() {
 void accessCache(unsigned long long address, int s_bits, int b_bits, int E_lines);
 
 int main(int argc, char** argv) {
-    int s_bits = 0;     // Number of set index bits
+    int s_bits = -1;     // Number of set index bits
     int E_lines = 0;
-    int b_bits = 0;     // Number of block offset bits
+    int b_bits = -1;     // Number of block offset bits
     char* trace_file = NULL;
     
   
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     }
 
     // Check if all required arguments are present
-    if (s_bits == 0 || E_lines == 0 || b_bits == 0 || trace_file == NULL) {
+    if (s_bits == -1 || E_lines == 0 || b_bits == -1 || trace_file == NULL) {
         printf("Error: Missing required arguments.\n");
         printUsage();
         exit(1);
@@ -150,6 +150,13 @@ int main(int argc, char** argv) {
     printf("Hits: %d\n", hit_count);
     printf("Misses: %d\n", miss_count);
     printf("Evictions: %d\n", eviction_count);
+    
+    double total = hit_count + miss_count;
+    double hit_rate = (hit_count / total) * 100.0;
+    double miss_rate = (miss_count / total) * 100.0;
+
+    printf("Hit rate: %.2f%%\n", hit_rate);
+    printf("Miss rate: %.2f%%\n", miss_rate);
 
 
     free(cache);
@@ -164,7 +171,7 @@ void accessCache(unsigned long long address, int s_bits, int b_bits, int E_lines
 
   // Decomposing the address
   unsigned long long address_tag = address >> (s_bits + b_bits);
-  unsigned long long set_index_mask = (1 << s_bits) - 1;
+  unsigned long long set_index_mask = (1ULL << s_bits) - 1;
   unsigned long long address_index = (address >> b_bits) & set_index_mask;
   
   for (int i = 0; i < E_lines; i++) {
