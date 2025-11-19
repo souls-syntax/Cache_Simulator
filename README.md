@@ -74,6 +74,18 @@ The simulator dynamically allocates memory based on the user-supplied parameters
 
 For a given memory address, the simulator decomposes the 64-bit virtual address into three components:
 
+Set Index = (Address >> b) & (S-1)
+
+Tag = Address >> (b+s)
+
+where:
+
+b = log2(Block Size)
+
+s = log2(Number of Sets)
+
+The bitwise AND mask (S-1) ensures the index stays within bounds.
+
 1. Tag: The unique identifier for the memory block.
 2. Set Index: Determines which set the data belongs to.
 3. Block offset: Ignored for the simulation logic.
@@ -135,7 +147,6 @@ Now that line with minimum LRU have been identified, the victim line is overwrit
 | traces/long.trace   | 1 | 1 | 5 | 229613 | 57351   | 57349     | 0.800146 | 0.199854  |
 | traces/long.trace   | 1 | 1 | 6 | 229623 | 57341   | 57339     | 0.800181 | 0.199819  |
 
-The finding of our simulation.
 
 ### Miss and eviction vs Associativity
 
@@ -155,14 +166,9 @@ The sharp decline in misses and eviction as associativity increases shows the LR
 Increasing block size yields higher hit rates, confirming that the simulator correctly models the pre-fetching benefits on larger cache lines.
 
 
-![Fig_3](./resources/Heatmap.png)
-*Fig 3: Correlation Matrix of cache Parameters.*
-
-The heatmap highlights a strong positive correlation(*p* == 0.47) between block size and hit rate, quantitatively validating the design parameters.
-
 ### The best configuration
 
-Among all our test the configuration that produced best results:
+Implict but here is verification larger cache size leads to better performance:
 
 | trace               | s | E | b | hits   | misses  | evictions | hit_rate | miss_rate |
 |---------------------|---|---|---|--------|---------|-----------|----------|-----------|
