@@ -99,4 +99,37 @@ for each line:
 ```
 Now that line with minimum LRU have been identified, the victim line is overwritten with the new tag, and it's lru_counter is written with global_lru_timestamp.
 
+## 4 Results
+
+### 4.1 Tests
+
+
+| trace               | s | E | b | hits   | misses  | evictions | hit_rate | miss_rate |
+|---------------------|---|---|---|--------|---------|-----------|----------|-----------|
+| traces/long.trace   | 1 | 1 | 2 | 58466  | 228498  | 228496    | 0.203740 | 0.796260  |
+| traces/long.trace   | 1 | 1 | 3 | 122086 | 164878  | 164876    | 0.425440 | 0.574560  |
+| traces/long.trace   | 1 | 1 | 4 | 164075 | 122889  | 122887    | 0.571762 | 0.428238  |
+| traces/long.trace   | 1 | 1 | 5 | 229613 | 57351   | 57349     | 0.800146 | 0.199854  |
+| traces/long.trace   | 1 | 1 | 6 | 229623 | 57341   | 57339     | 0.800181 | 0.199819  |
+
+The results we got from our simulator.
+
+### Miss and eviction vs Associativity
+
+![Fig_1](./resources/miss_and_eviction_vs_associativity.png){ width=70% }
+
+*Fig 1: Impact of Set associativity on Miss Rates.*
+
+
+The sharp decline in misses and eviction as associativity increases shows the LRU policy is migiating the conflict miss.
+
+
+### Hit Rate vs Block Size
+
+![Fig_2](./resources/hit_vs_associativity.png){ width=70% }
+*Fig 2: Analysis of Spatial locality*
+
+Increasing block size yields higher hit rates, confirming that the simulator correctly models the pre-fetching benefits on larger cache lines.
+
+
 
